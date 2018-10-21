@@ -15,14 +15,6 @@ get_name() {
 	cat COURSE_NAME.tmp | sed -n "$1,$1p"
 }
 
-get_info() {
-	cat COURSE_INFO.tmp | sed -n "$1,$1p"
-}
-
-get_no() {
-	cat CURRENT_NO.tmp | sed -n "$1,$1p"
-}
-
 init() {
 	if [ ! -f course.json ]; then
 		curl 'https://timetable.nctu.edu.tw/?r=main/get_cos_list' --data 'm_acy=107&m_sem=1&m_degree=3&m_dep_id=17&m_group=**&m_grade=**&m_class=**&m_option=**&m_crsname=**&m_teaname=**&m_cos_id=**&m_cos_code=**&m_crstime=**&m_crsoutline=**&m_costype=**' > course.json
@@ -44,10 +36,6 @@ init() {
 			i=$(($i+1))
 		done
 	fi
-
-	if [ ! -f CURRENT_NO.tmp ]; then
-	   touch CURRENT_NO.tmp
-   	fi	   
 }
 
 init
@@ -109,7 +97,7 @@ check() {
 			para=$(echo ${COURSE_TIME} | cut -c1-1)
 			to_i ${para}
 
-			current=$(cat VIRTUAL_TABLE.tmp | sed -n "$(((${time}*7)+$a+1)),$(((${time}*7)+$a+1))p")
+			current=$(cat TABLE.tmp | sed -n "$(((${time}*7)+$a+1)),$(((${time}*7)+$a+1))p")
 			
 			if [ "${current}" != "_" ]; then
 				CHECK="FALSE"
@@ -130,11 +118,6 @@ collision() {
 }
 
 success() {
-	mv TEMP_TABLE.tmp TABLE.tmp
-	mv TEMP_CURRENT_COURSE.tmp CURRENT_COURSE.tmp
-	
-
-
 	dialog --title "SUCCESS" --ok-label "MENU" --msgbox "Add course successfully." 10 20
 	result=$?
 	menu 
@@ -150,7 +133,6 @@ set_course() {
 		COURSE_LOCATION=$(get_location ${tar})
 
 		echo "${COURSE_TIME} ${COURSE_NAME}${COURSE_LOCATION}" >> CURRENT_COURSE.tmp
-		echo "${tar}" >> CURRENT_NO.tmp
 
 		while [ "${COURSE_TIME}" != "" ]; do
 			a=$(echo ${COURSE_TIME} | cut -c1-1)
@@ -172,58 +154,15 @@ set_course() {
 	fi	
 }
 
-set EXIST
-
-check_current() {
-	EXIST="FALSE"
-	if [ ! -f CURRENT_COURSE.tmp ]; then
-		touch CURRENT_COURSE.tmp
-	fi
-	n=$(cat CURRENT_NO.tmp | wc -l)
-	i=1
-	while [ $i -le $n ] || [ $i -eq $n ]; do
-		check_no=$(get_no $i)
-		if [ ${check_no} -eq $1 ]; then
-			EXIST="TRUE"
-		fi	
-		i=$(($i+1))
-	done 
-}
-
 add_course() {
-	rm COURSE_INFO_LIST.tmp	
-	j=1
-	while [ $j -le ${total} ]; do
-		check_current $j
-		if [ ${EXIST} = "TRUE" ]; then
-			echo "$(get_info $j) on" >> COURSE_INFO_LIST.tmp
-		else
-			echo "$(get_info $j) off" >> COURSE_INFO_LIST.tmp
-		fi
-		#echo "$j" 
-		j=$(($j+1))
-	done	
-		
-	dialog --checklist "ADD COURSE" 15 61 130 \
-		$(cat COURSE_INFO_LIST.tmp) 2>input.tmp
-	
+	dialog --title "ADD COURSE" --menu "" 15 61 ${total} \
+	$(cat COURSE_INFO.tmp) 2>input.tmp
 	result=$?
 
-	
 	if [ ${result} -eq 0 ]; then
-
-		echo "first_line" > VIRTUAL_TABLE.tmp
-		
-		i=0
-		while [ $i -le 200 ]; do
-			echo "_" >> VIRTUAL_TABLE.tmp
-			i=$(($i+1))
-		done
-		
 		set_course
 	fi
-
-	#menu
+	menu
 } 
 
 delete_course() {
@@ -464,5 +403,5 @@ welcome() {
 	menu
 }
 
-#welcome
-add_course
+welcome
+
