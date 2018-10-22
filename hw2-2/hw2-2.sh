@@ -283,7 +283,104 @@ search_course() {
 		set_course 1
 	fi
 	menu
-} 
+}
+
+set CHECK_TIME
+check_time() {
+	CHECK_TIME="TRUE"
+	COURSE_TIME=$(get_time $1)
+	CHECK_TIME_CNT=0
+
+	while [ "${COURSE_TIME}" != "" ]; do
+		a=$(echo ${COURSE_TIME} | cut -c1-1)
+		COURSE_TIME=$(echo ${COURSE_TIME} | cut -c2-)
+		while [ "$(echo ${COURSE_TIME} | grep "^[A-Z]")" != "" ]; do
+			para=$(echo ${COURSE_TIME} | cut -c1-1)
+			to_i ${para}
+
+			current=$(cat SEARCH_TABLE.tmp | sed -n "$(((${time}*7)+$a+1)),$(((${time}*7)+$a+1))p")
+			
+			if [ "${current}" = "OK" ]; then
+				CHECK_TIME_CNT=$((${CHECK_TIME_CNT}+1))
+			fi	
+			COURSE_TIME=$(echo ${COURSE_TIME} | cut -c2-)
+		done
+	done
+
+	if [ ${CHECK_TIME_CNT} -eq ${TIME_CNT} ]; then
+		CHECK_TIME="TRUE"
+	else
+		CHECK_TIME="FALSE"
+	fi
+}
+
+set TIME_CNT
+set_search_time() {
+	
+	SEARCH_TIME=$1
+	TIME_CNT=0
+	echo "first_line" > SEARCH_TABLE.tmp
+		
+	i=0
+	while [ $i -le 200 ]; do
+		echo "_" >> SEARCH_TABLE.tmp
+		i=$(($i+1))
+	done
+
+	while [ "${SEARCH_TIME}" != "" ]; do
+		a=$(echo ${SEARCH_TIME} | cut -c1-1)
+		SEARCH_TIME=$(echo ${SEARCH_TIME} | cut -c2-)
+		while [ "$(echo ${SEARCH_TIME} | grep "^[A-Z]")" != "" ]; do
+			to_i $(echo ${SEARCH_TIME} | cut -c1-1)
+			
+			TIME_CNT=$((${TIME_CNT}+1))
+			cat SEARCH_TABLE.tmp | sed -n "1,$(((${time}*7)+$a))p" > tmp
+			echo "OK" >> tmp 
+			cat SEARCH_TABLE.tmp | sed -n "$(((${time}*7)+$a+2)),150p" >> tmp
+			mv tmp SEARCH_TABLE.tmp
+			
+			SEARCH_TIME=$(echo ${SEARCH_TIME} | cut -c2-)
+		done
+	done
+}
+
+search_time() {
+
+	dialog --title "SEARCH TIME" --inputbox "Please input time:" 16 51 2>input.tmp
+	result=$?
+	SEARCH="$(cat input.tmp)"
+
+	if [ ${result} -eq 255 ]; then
+		menu
+	fi
+
+	set_search_time ${SEARCH}
+
+	if [ -f SEARCH.tmp ]; then
+		rm SEARCH.tmp
+		touch SEARCH.tmp
+	fi
+
+	iter=1
+	while [ $iter -le ${total} ]; do
+		check_time $iter
+			if [ ${CHECK_TIME} = "TRUE" ]; then
+				COURSE_INFO=$(cat COURSE_INFO.tmp | sed -n "${iter},${iter}p")
+				echo "${COURSE_INFO}" >> SEARCH.tmp
+			fi 
+		iter=$(($iter+1))
+	done
+
+	dialog --title "SEARCH RESULT (OK if you want to add)" --menu "" 15 61 ${total} \
+	$(cat SEARCH.tmp) 2>input.tmp
+	result=$?
+
+	if [ ${result} -eq 0 ]; then
+		set_course 1
+	fi
+	menu
+
+}
 
 free_time() {
 
@@ -405,6 +502,7 @@ menu() {
 	"2" "Add Course" \
 	"3" "Search Courses" \
 	"4" "Free Time" \
+	"5" "Search Time" \
 	2> input.tmp
 	result=$?
 	tar=$(cat input.tmp)
@@ -422,6 +520,9 @@ menu() {
 			;;
 			4)
 				free_time
+			;;
+			5)
+				search_time
 			;;
 		esac
 	else
