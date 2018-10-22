@@ -176,10 +176,10 @@ set_course() {
 				while [ "$(echo ${COURSE_TIME} | grep "^[A-Z]")" != "" ]; do
 					to_i $(echo ${COURSE_TIME} | cut -c1-1)
 					
-					cat VIRTUAL_TABLE.tmp | sed -n "1,$(((${time}*7)+$a))p" > tmp
-					echo "${COURSE_NAME}${COURSE_LOCATION}" >> tmp 
-					cat VIRTUAL_TABLE.tmp | sed -n "$(((${time}*7)+$a+2)),150p" >> tmp
-					mv tmp VIRTUAL_TABLE.tmp
+					cat VIRTUAL_TABLE.tmp | sed -n "1,$(((${time}*7)+$a))p" > tmp.tmp
+					echo "${COURSE_NAME}${COURSE_LOCATION}" >> tmp.tmp 
+					cat VIRTUAL_TABLE.tmp | sed -n "$(((${time}*7)+$a+2)),150p" >> tmp.tmp
+					mv tmp.tmp VIRTUAL_TABLE.tmp
 					
 					COURSE_TIME=$(echo ${COURSE_TIME} | cut -c2-)
 				done
@@ -334,10 +334,10 @@ set_search_time() {
 			to_i $(echo ${SEARCH_TIME} | cut -c1-1)
 			
 			TIME_CNT=$((${TIME_CNT}+1))
-			cat SEARCH_TABLE.tmp | sed -n "1,$(((${time}*7)+$a))p" > tmp
-			echo "OK" >> tmp 
-			cat SEARCH_TABLE.tmp | sed -n "$(((${time}*7)+$a+2)),150p" >> tmp
-			mv tmp SEARCH_TABLE.tmp
+			cat SEARCH_TABLE.tmp | sed -n "1,$(((${time}*7)+$a))p" > tmp.tmp
+			echo "OK" >> tmp.tmp 
+			cat SEARCH_TABLE.tmp | sed -n "$(((${time}*7)+$a+2)),150p" >> tmp.tmp
+			mv tmp.tmp SEARCH_TABLE.tmp
 			
 			SEARCH_TIME=$(echo ${SEARCH_TIME} | cut -c2-)
 		done
