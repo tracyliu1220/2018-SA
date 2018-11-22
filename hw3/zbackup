@@ -1,0 +1,57 @@
+#!/bin/sh
+
+list() {
+	SPEC=$1
+	if [ "${SPEC}" = "" ]; then
+		echo "ID    Dataset               Time"
+		zfs list -t snapshot | tail -n +2 | sed 's/@/ /g' | awk '{print $1 " " $2}' | sort -k 2 | awk '{printf "%-5s %-21s %s\n",NR,$1,$2}'
+
+	else
+		echo "ID    Dataset               Time"
+		zfs list -t snapshot | tail -n +2 | grep "${SPEC}[^/]" | sed 's/@/ /g' |awk '{print $1 " " $2}' | sort -k 2 | awk '{printf "%-5s %-21s %s\n",NR,$1,$2}'
+	fi
+}
+
+rotate() {
+	CUR_CNT=$(($(list $1 | wc -l) - 1))
+	if [ $(($2 - 1)) -le ${CUR_CNT} ]; then
+		TO_DELETE=$(list $1 | tail -n +2 | head -n $((${CUR_CNT} - $2)) | awk '{print $2 "@" $3}')
+		for to_delete in ${TO_DELETE}; do
+			zfs destroy ${to_delete}
+		done
+	fi
+}
+
+create() {
+	DATE=$(date "+%Y-%m-%d-%H:%M:%S")
+	TARGET="mypool"
+	ROTATE="20"
+	if [ "$2" != "" ]; then
+		ROTATE=$2
+	fi
+	if [ "$1" != "" ]; then
+		TARGET=$1
+	fi
+	zfs snapshot ${TARGET}@${DATE}
+	echo "check $2"
+	rotate ${TARGET} ${ROTATE}
+}
+
+delete() {
+	list $1
+	# echo "Is the snapshot with ID $2 you want to delete?"
+	# RESPONSE=$?
+	# if [ "${RESPONSE}" = "[Yy][Ee][Ss]" ]; then
+		zfs destroy $(list $1 | tail -n +2 | sed -n "$2,$2p" | awk '{print $2 "@" $3}')
+	# fi
+}
+
+case $1 in
+	'--list')
+		list $2;;
+	'--delete')
+		delete $2 $3;;
+	*)
+		create $1 $2;;
+esac
+
