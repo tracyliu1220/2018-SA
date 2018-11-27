@@ -17,6 +17,7 @@ rotate() {
 	if [ $(($2 - 1)) -le ${CUR_CNT} ]; then
 		TO_DELETE=$(list $1 | tail -n +2 | head -n $((${CUR_CNT} - $2)) | awk '{print $2 "@" $3}')
 		for to_delete in ${TO_DELETE}; do
+			echo "ROTATE ${to_delete}"
 			zfs destroy ${to_delete}
 		done
 	fi
@@ -33,17 +34,18 @@ create() {
 		TARGET=$1
 	fi
 	zfs snapshot ${TARGET}@${DATE}
-	echo "check $2"
+	echo "SNAP ${TARGET}@${DATE}"
 	rotate ${TARGET} ${ROTATE}
 }
 
 delete() {
-	list $1
-	# echo "Is the snapshot with ID $2 you want to delete?"
-	# RESPONSE=$?
-	# if [ "${RESPONSE}" = "[Yy][Ee][Ss]" ]; then
+	if [ "$2" = "" ]; then
+		for tar in $(list $1 | tail -n +2 | awk '{print $2 "@" $3}'); do
+			zfs destroy ${tar}
+		done
+	else	
 		zfs destroy $(list $1 | tail -n +2 | sed -n "$2,$2p" | awk '{print $2 "@" $3}')
-	# fi
+	fi
 }
 
 case $1 in
@@ -51,7 +53,9 @@ case $1 in
 		list $2;;
 	'--delete')
 		delete $2 $3;;
-	*)
+	'mypool'|'mypool/upload'|'mypool/hidden'|'mypool/public')
 		create $1 $2;;
+	*)
+		echo "ERROR undefined operation.";;
 esac
 

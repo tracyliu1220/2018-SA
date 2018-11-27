@@ -1,0 +1,28 @@
+#!/bin/sh
+
+. /etc/rc.subr
+
+name="ftp_watchd"
+pidfile="/var/run/pure-uploadscript.pid"
+procname="/usr/local/sbin/pure-uploadscript"
+start_cmd="${name}_start"
+
+load_rc_config ${ftp_watchd_enable}
+: ${ftp_watchd_msg="ftp_watchd has not started."}
+
+check_pidfile ${pidfile} ${procname}
+
+ftp_watchd_start() {
+	if [ $(ps -auxww | grep 'uploadscript' | grep -v 'grep' | wc -l) -eq 0 ]; then
+		/usr/local/sbin/pure-uploadscript -p /var/run/pure-uploadscript.pid -B -r /home/tracyliu/ftp_watchd_uploadscript
+		echo "pure-uploadscript is running at $(cat /var/run/pure-uploadscript.pid)."
+	else
+		echo "pure-uploadscript is already running at $(cat /var/run/pure-uploadscript.pid)."
+	fi
+}
+
+if [ "${ftp_watchd_enable:="no"}" = "YES" ]; then
+	run_rc_command "$1"
+else
+	echo "Please enable ftp_watchd in rc.conf first."
+fi
