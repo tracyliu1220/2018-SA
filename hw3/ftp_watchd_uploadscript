@@ -1,0 +1,12 @@
+#!/bin/sh
+
+. /etc/rc.subr
+
+name="ftp_watchd"
+
+load_rc_config ${ftp_watchd_command}
+
+cmd="${ftp_watchd_command}"
+
+eval "${cmd}"
+
