@@ -23,13 +23,25 @@ while [ $i -le ${account_cnt} ]; do
 	i=$(($i + 1))
 done
 
-#sudo echo $(sudo cat /etc/master.passwd | tail -n ${account_cnt}) >> /var/yp/src/master.passwd
-
 i=1
 while [ $i -le ${account_cnt} ]; do
 	account_info=$(get_acc_info $i)
 	user_name=$(echo ${account_info} | awk 'BEGIN {FS=", "} {print $1}')
+	
+	echo $(sudo cat /etc/master.passwd | grep ${user_name}) >> /var/yp/src/master.passwd
 
 	sudo pw userdel ${user_name}
 	i=$(($i + 1))
 done
+
+cd /var/yp
+make
+sudo yppush -h storage passwd.byname
+sudo yppush -h storage passwd.byuid
+
+sudo yppush -h storage group.byname
+sudo yppush -h storage group.bygid
+
+sudo yppush -h storage master.passwd.byname
+sudo yppush -h storage master.passwd.byuid
+
